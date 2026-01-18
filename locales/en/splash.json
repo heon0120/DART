@@ -1,0 +1,9 @@
+{
+  "loading_splash": "Loading splash screen...",
+  "initializing_database": "Initializing database...",
+  "loading_ui": "Composing UI...",
+  "initializing_window": "Initializing window...",
+  "loading_map_data": "Loading map data...",
+  "splash_complete": "Loading complete",
+  "splash_error": "Error occurred during loading"
+}

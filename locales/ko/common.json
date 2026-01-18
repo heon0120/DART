@@ -1,0 +1,17 @@
+{
+  "welcome": "환영합니다",
+  "title": "TDCS (Tactical Dart Control System)",
+  "description": "전술 무인항공기 제어 시스템",
+  "ok": "확인",
+  "cancel": "취소",
+  "yes": "예",
+  "no": "아니오",
+  "settings": "설정",
+  "about": "정보",
+  "exit": "종료",
+  "loading": "로드 중...",
+  "initializing": "초기화 중...",
+  "error": "오류",
+  "warning": "경고",
+  "success": "성공"
+}

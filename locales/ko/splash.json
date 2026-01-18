@@ -1,0 +1,9 @@
+{
+  "loading_splash": "스플래시 화면 로드 중...",
+  "initializing_database": "데이터베이스 초기화 중...",
+  "loading_ui": "UI 구성 중...",
+  "initializing_window": "윈도우 초기화 중...",
+  "loading_map_data": "지도 데이터 로드 중...",
+  "splash_complete": "로드 완료",
+  "splash_error": "로드 중 오류 발생"
+}

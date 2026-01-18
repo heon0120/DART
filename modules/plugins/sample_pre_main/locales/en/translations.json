@@ -1,0 +1,5 @@
+{
+  "greeting": "Hello!",
+  "initializing": "Initializing...",
+  "context_initialized": "Context initialized successfully"
+}

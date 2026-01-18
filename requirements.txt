@@ -1,0 +1,4 @@
+PyQt5==5.15.9
+PyQtWebEngine==5.15.6
+geopy==2.4.0
+mgrs==1.4.3

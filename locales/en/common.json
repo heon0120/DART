@@ -1,0 +1,17 @@
+{
+  "welcome": "Welcome",
+  "title": "TDCS (Tactical Dart Control System)",
+  "description": "Tactical Unmanned Aerial Vehicle Control System",
+  "ok": "OK",
+  "cancel": "Cancel",
+  "yes": "Yes",
+  "no": "No",
+  "settings": "Settings",
+  "about": "About",
+  "exit": "Exit",
+  "loading": "Loading...",
+  "initializing": "Initializing...",
+  "error": "Error",
+  "warning": "Warning",
+  "success": "Success"
+}
