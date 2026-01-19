@@ -55,9 +55,13 @@ Python 3.8 이상이 설치되어 있어야 합니다. 또한 다음의 주요 �
 
 1. 저장소를 클론하거나 파일을 다운로드합니다.
 
-2. 필요한 Python 패키지를 설치합니다. 애플리케이션은 실행 중에 누락된 패키지를 자동으로 설치하려고 시도합니다.
+2. 필요한 Python 패키지를 설치합니다.
 
 3. openAIP_data 디렉터리에 항공 지리 데이터(GeoJSON 파일)를 배치합니다. 파일명 형식은 '{prefix}_apt.geojson', '{prefix}_nav.geojson' 등이어야 합니다.
+ > openAIP 의 geojson 데이터는 [OpenAIP](https://www.openaip.net/) 에서 회원가입후 [Data Exports](https://www.openaip.net/data/exports) 항목에서 무료로 다운로드 받을수 있습니다.
+
+ > [!important]
+ > OpenAIP_data 디렉터리에 geojson데이터가 존재하지 않는다면 관제권, 공항등 특정 오버레이가 표시되지 않습니다.
 
 4. locales 디렉터리에 다국어 번역 파일이 포함되어 있습니다. 필요에 따라 추가 언어를 지원하도록 수정할 수 있습니다.
 
