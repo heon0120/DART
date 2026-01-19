@@ -39,6 +39,7 @@
   "button.mgrs_grid": "MGRS GRID",
   "button.coords": "COORDS",
   "button.control_zone": "CONTROL ZONE",
+  "button.compass": "COMPASS",
   
   "dialog.confirm": "CONFIRM",
   "dialog.delete_confirm": "Are you sure you want to delete this waypoint?",

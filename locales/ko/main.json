@@ -39,7 +39,7 @@
   "button.mgrs_grid": "MGRS GRID",
   "button.coords": "COORDS",
   "button.control_zone": "관제권",
-  
+  "button.compass": "나침반",
   "dialog.confirm": "확인",
   "dialog.delete_confirm": "정말 삭제하시겠습니까?",
   "dialog.warning": "경고",

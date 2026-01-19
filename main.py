@@ -473,6 +473,7 @@ class TacticalMapView(QWebEngineView):
         self.mgrs_grid_visible = False
         self.coords_display_visible = False
         self.control_zone_visible = False
+        self.compass_visible = False
         self.splash = splash  # 스플래시 화면 객체 저장
         self.setup_channel()
         self.load_initial_map()
@@ -649,6 +650,8 @@ class TacticalMapView(QWebEngineView):
                 var geoJsonVisible = {{}};
                 var controlZoneLayers = {{}};  // 관제권 레이어들을 저장
                 var controlZoneVisible = false;  // 관제권 표시 상태
+                var compassMarkers = {{}};  // 나침반 마커들을 저장
+                var compassVisible = false;  // 나침반 표시 상태
 
                 // 1. WebChannel 초기화
                 new QWebChannel(qt.webChannelTransport, function(channel) {{
@@ -1070,6 +1073,180 @@ class TacticalMapView(QWebEngineView):
                     return coordsDisplayVisible;
                 }};
 
+                // 나침반 토글 함수
+                window.toggleCompass = function() {{
+                    if (compassVisible) {{
+                        removeCompass();
+                        compassVisible = false;
+                    }} else {{
+                        drawCompass();
+                        compassVisible = true;
+                    }}
+                    return compassVisible;
+                }};
+
+                // 나침반 그리기 함수
+                function drawCompass() {{
+                    // 기존 나침반 마커 제거
+                    for (var wpId in compassMarkers) {{
+                        if (compassMarkers[wpId]) {{
+                            map.removeLayer(compassMarkers[wpId]);
+                        }}
+                    }}
+                    compassMarkers = {{}};
+
+                    // 기존 나침반 라벨 모두 제거 (방향 라벨 + 각도 라벨 + 내부 원) - 잔상 방지
+                    map.eachLayer(function(layer) {{
+                        if (layer instanceof L.Marker && layer.getIcon() && 
+                            (layer.getIcon().options.className === 'compass-direction-label' || 
+                             layer.getIcon().options.className === 'compass-degree-label')) {{
+                            map.removeLayer(layer);
+                        }}
+                        if (layer instanceof L.Circle && layer.options.dashArray === '3, 3') {{
+                            map.removeLayer(layer);
+                        }}
+                    }});
+
+                    // 줌 레벨에 따라 나침반 크기 조정
+                    var zoomLevel = map.getZoom();
+                    var baseRadius = 800; // 기본 반경
+                    var compassRadius = baseRadius;
+                    
+                    // 줌 레벨에 따른 반경 조정
+                    if (zoomLevel < 8) {{
+                        compassRadius = baseRadius * 0.6; // 축소 줌에서는 더 작게
+                    }} else if (zoomLevel >= 14) {{
+                        compassRadius = baseRadius * 1.5; // 확대 줌에서는 더 크게
+                    }}
+
+                    waypoints.forEach(function(wp) {{
+                        // 각 웨이포인트마다 나침반(각도기) 원형 오버레이 생성
+                        var compassCircle = L.circle([wp.lat, wp.lon], {{
+                            radius: compassRadius,
+                            color: '#00d1b2',
+                            weight: 2,
+                            opacity: 0.7,
+                            fill: false,
+                            dashArray: '5, 5'
+                        }});
+
+                        // 8개 주요 방향: N, NE, E, SE, S, SW, W, NW
+                        var directions = [
+                            {{ angle: 0, label: 'N' }},
+                            {{ angle: 45, label: 'NE' }},
+                            {{ angle: 90, label: 'E' }},
+                            {{ angle: 135, label: 'SE' }},
+                            {{ angle: 180, label: 'S' }},
+                            {{ angle: 225, label: 'SW' }},
+                            {{ angle: 270, label: 'W' }},
+                            {{ angle: 315, label: 'NW' }}
+                        ];
+
+                        // 주요 방향 라벨 표시
+                        directions.forEach(function(dir) {{
+                            // 올바른 각도 계산: 0°=북쪽(위), 90°=동쪽(오른쪽), 180°=남쪽(아래), 270°=서쪽(왼쪽)
+                            var rad = (90 - dir.angle) * Math.PI / 180;
+                            var distance = compassRadius * 1.15; // 반경보다 조금 더 바깥에 표시
+                            var lat = wp.lat + (Math.sin(rad) * distance / 111000); // 위도 변환
+                            var lon = wp.lon + (Math.cos(rad) * distance / (111000 * Math.cos(wp.lat * Math.PI / 180))); // 경도 변환
+
+                            var marker = L.marker([lat, lon], {{
+                                icon: L.divIcon({{
+                                    className: 'compass-direction-label',
+                                    html: '<div style="background: transparent; color: #00d1b2; padding: 2px 6px; font-size: 12px; font-weight: bold; border: none; border-radius: 2px; pointer-events: none; font-family: Courier New, monospace; text-shadow: 0 0 3px rgba(0,0,0,0.8);">' + dir.label + '</div>',
+                                    iconSize: null,
+                                    iconAnchor: [12, 12]
+                                }})
+                            }});
+                            marker.addTo(map);
+                        }});
+
+                        // 30도마다 각도 마크 추가 (숫자 표시)
+                        for (var angle = 0; angle < 360; angle += 30) {{
+                            // 주요 방향(8개)은 이미 라벨이 있으므로 건너뛰기
+                            if (angle % 45 === 0) continue;
+                            
+                            var rad = (90 - angle) * Math.PI / 180;
+                            var markDistance = compassRadius * 1.0; // 원 위에 표시
+                            var lat = wp.lat + (Math.sin(rad) * markDistance / 111000);
+                            var lon = wp.lon + (Math.cos(rad) * markDistance / (111000 * Math.cos(wp.lat * Math.PI / 180)));
+
+                            var markerDiv = L.divIcon({{
+                                className: 'compass-degree-label',
+                                html: '<div style="background: transparent; color: #00a896; padding: 0px 2px; font-size: 9px; font-weight: bold; border: none; pointer-events: auto; cursor: pointer; font-family: Courier New, monospace; text-shadow: 0 0 2px rgba(0,0,0,0.8); transition: all 0.2s;" data-angle="' + angle + '">' + angle + '°</div>',
+                                iconSize: null,
+                                iconAnchor: [10, 10]
+                            }});
+
+                            var marker = L.marker([lat, lon], {{ icon: markerDiv }});
+                            
+                            // 호버 이벤트 추가
+                            marker.on('mouseover', function(e) {{
+                                var el = e.target._icon.querySelector('div');
+                                if (el) {{
+                                    el.style.background = 'rgba(0, 209, 178, 0.3)';
+                                    el.style.fontSize = '11px';
+                                    el.style.padding = '2px 4px';
+                                    el.style.borderRadius = '4px';
+                                    el.style.border = '1px solid #00d1b2';
+                                    el.style.color = '#ffffff';
+                                }}
+                            }});
+                            
+                            marker.on('mouseout', function(e) {{
+                                var el = e.target._icon.querySelector('div');
+                                if (el) {{
+                                    el.style.background = 'transparent';
+                                    el.style.fontSize = '9px';
+                                    el.style.padding = '0px 2px';
+                                    el.style.borderRadius = '2px';
+                                    el.style.border = 'none';
+                                    el.style.color = '#00a896';
+                                }}
+                            }});
+                            
+                            marker.addTo(map);
+                        }}
+
+                        // 내부 원 (반경 표시용, 선택사항)
+                        var innerCircle = L.circle([wp.lat, wp.lon], {{
+                            radius: compassRadius / 2,
+                            color: '#00d1b2',
+                            weight: 1,
+                            opacity: 0.3,
+                            fill: false,
+                            dashArray: '3, 3'
+                        }});
+                        innerCircle.addTo(map);
+
+                        compassCircle.addTo(map);
+                        compassMarkers[wp.wp_id] = compassCircle;
+                    }});
+                }}
+
+                // 나침반 제거 함수
+                function removeCompass() {{
+                    for (var wpId in compassMarkers) {{
+                        if (compassMarkers[wpId]) {{
+                            map.removeLayer(compassMarkers[wpId]);
+                        }}
+                    }}
+                    compassMarkers = {{}};
+
+                    // 모든 나침반 라벨 제거 (방향 라벨 + 각도 라벨 + 내부 원)
+                    map.eachLayer(function(layer) {{
+                        if (layer instanceof L.Marker && layer.getIcon() && 
+                            (layer.getIcon().options.className === 'compass-direction-label' || 
+                             layer.getIcon().options.className === 'compass-degree-label')) {{
+                            map.removeLayer(layer);
+                        }}
+                        if (layer instanceof L.Circle && layer.options.dashArray === '3, 3') {{
+                            // 내부 원 제거
+                            map.removeLayer(layer);
+                        }}
+                    }});
+                }}
+
                 function addWaypoints() {{
                     // 기존 마커 제거
                     Object.keys(markers).forEach(id => map.removeLayer(markers[id]));
@@ -1144,6 +1321,11 @@ class TacticalMapView(QWebEngineView):
                         symbols = newSymbols;
                     }}
                     addWaypoints();
+
+                    // 나침반이 켜져있으면 다시 그리기
+                    if (compassVisible) {{
+                        drawCompass();
+                    }}
 
                     if (fitBounds && waypoints.length > 0) {{
                         var group = new L.featureGroup(Object.values(markers));
@@ -1444,6 +1626,14 @@ class TacticalMapView(QWebEngineView):
             self.control_zone_visible = not self.control_zone_visible
             self.page().runJavaScript("toggleControlZone();")
             return self.control_zone_visible
+        return False
+
+    def toggle_compass(self):
+        """나침반 도구 표시/숨김 토글"""
+        if self.is_map_ready:
+            self.compass_visible = not self.compass_visible
+            self.page().runJavaScript("toggleCompass();")
+            return self.compass_visible
         return False
 
     @pyqtSlot(str)
@@ -2167,6 +2357,42 @@ class DARTMainWindow(QMainWindow):
                 }
             """)
 
+    def toggle_compass(self):
+        """나침반 도구 토글"""
+        is_visible = self.map_view.toggle_compass()
+        if is_visible:
+            self.compass_toggle_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #00d1b2;
+                    color: #121212;
+                    border: 1px solid #00d1b2;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #00c9a8;
+                }
+            """)
+        else:
+            self.compass_toggle_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #333333;
+                    color: #e0e0e0;
+                    border: 1px solid #444444;
+                    border-radius: 4px;
+                    padding: 4px 8px;
+                }
+                QPushButton:hover {
+                    background-color: #444444;
+                    border-color: #00d1b2;
+                }
+                QPushButton:pressed {
+                    background-color: #00d1b2;
+                    color: #121212;
+                }
+            """)
+
     def toggle_geojson_layer(self, layer_key):
         """GeoJSON 레이어 토글"""
         # 레이어 파일이 존재하는지 확인
@@ -2337,6 +2563,31 @@ class DARTMainWindow(QMainWindow):
         self.control_zone_toggle_btn.setFont(QFont("Segoe UI", 9))
         self.control_zone_toggle_btn.clicked.connect(self.toggle_control_zones)
         layout.addWidget(self.control_zone_toggle_btn)
+
+        # 나침반 도구 토글 버튼
+        btn_text = self.loc.get_text("main.button.compass") if self.loc else "Compass"
+        self.compass_toggle_btn = QPushButton(btn_text)
+        self.compass_toggle_btn.setMaximumWidth(100)
+        self.compass_toggle_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #333333;
+                color: #e0e0e0;
+                border: 1px solid #444444;
+                border-radius: 4px;
+                padding: 4px 8px;
+            }
+            QPushButton:hover {
+                background-color: #444444;
+                border-color: #00d1b2;
+            }
+            QPushButton:pressed {
+                background-color: #00d1b2;
+                color: #121212;
+            }
+        """)
+        self.compass_toggle_btn.setFont(QFont("Segoe UI", 9))
+        self.compass_toggle_btn.clicked.connect(self.toggle_compass)
+        layout.addWidget(self.compass_toggle_btn)
 
         # GeoJSON 레이어 선택 드롭다운
         self.all_geojson_layers = [
