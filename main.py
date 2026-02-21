@@ -436,8 +436,6 @@ class TacticalMapView(QWebEngineView):
     waypoint_updated = pyqtSignal(str, float, str, float)  # wp_id, alt, task_code, speed
     waypoint_moved = pyqtSignal(str, float, float)  # wp_id, lat, lon
     geojson_layers_loaded = pyqtSignal()  # GeoJSON 레이어 로드 완료 시그널
-    geojson_layers_loaded = pyqtSignal()  # GeoJSON 레이어 로드 완료 시그널
-    geojson_layers_loaded = pyqtSignal()  # GeoJSON 레이어 로드 완료 시그널
 
     _modal = False
     _windowModality = Qt.NonModal
